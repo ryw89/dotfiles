@@ -1,4 +1,4 @@
 bootstrap_pkg:
   - ansible
   - emacs
-  - firefox
+  - git
