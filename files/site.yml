@@ -1,0 +1,9 @@
+- name: Set up my Arch Linux machine
+
+  gather_facts: true
+  hosts: localhost
+
+  tasks:
+    - name: self
+      ansible.builtin.include_role:
+        name: self

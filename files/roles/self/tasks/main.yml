@@ -1,0 +1,5 @@
+- name: Install ntpdate
+  become: true
+  ansible.builtin.package:
+    name: "{{ pkg }}"
+    state: present

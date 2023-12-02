@@ -9,3 +9,5 @@ grep '-' pkg.yml | cut -d '-' -f2 | sed 's/^[[:space:]]//g' > $PKG_LIST
 pacman -S --needed - < $PKG_LIST
 
 rm $PKG_LIST
+
+ansible-playbook site.yml --ask-become-pass
