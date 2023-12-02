@@ -1,4 +1,4 @@
-- name: Install ntpdate
+- name: Install packages
   become: true
   ansible.builtin.package:
     name: "{{ pkg }}"
