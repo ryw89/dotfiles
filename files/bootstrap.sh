@@ -2,6 +2,12 @@
 #
 # Run as root.
 
+if [ "$(id -u)" -ne 0 ]
+    then echo "Please run as root"
+    exit
+fi
+
+
 PKG_LIST=".pkgs.tmp"
 REPO="https://ryanwhittingham.com/bootstrap.git"
 REPO_NAME="bootstrap"
