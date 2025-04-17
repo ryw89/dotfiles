@@ -1,0 +1,70 @@
+# argp
+export ARGP_HELP_FMT="no-dup-args-note"
+
+if [ "$INSIDE_EMACS" ]; then
+    export TERM=dumb-emacs-ansi COLORTERM=1
+    PROMPT_COMMAND=
+    export PS1='[%n@%m]%~$ '
+fi
+
+# For Emacs Tramp
+[[ $TERM == "dumb" ]] && unsetopt zle && PS1='$ ' && return
+
+# git status
+autoload -Uz vcs_info
+precmd() { vcs_info 2>/dev/null }
+
+# Format the vcs_info_msg_0_ variable
+zstyle ':vcs_info:git:*' formats '%b'
+
+export PS1='[%n@%m]%~$ '
+
+# Right promp w/ git info
+autoload -U colors && colors
+RPROMPT=%{$fg[cyan]%}\$vcs_info_msg_0_%{$reset_color%}
+
+# History
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt SHARE_HISTORY
+
+# jump
+which jump && eval "$(SHELL=zsh jump shell)"
+
+autoload -Uz compinit
+compinit
+setopt COMPLETE_ALIASES
+setopt PROMPT_SUBST
+zstyle ':completion:*' rehash true
+
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# Additional keybindings
+if [ -z "$INSIDE_EMACS" ]; then
+    bindkey "^[[1;5C" forward-word
+    bindkey "^[[1;5D" backward-word
+fi
+
+# Editor
+export EDITOR="nano"
+
+# Go
+export GOROOT=/usr/lib/go
+export GOPATH=$HOME/go
+export GOBIN=$HOME/go/bin
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+# Python
+export PATH=~/.local/bin:$PATH
+
+# Rust
+export PATH=~/.cargo/bin:$PATH
+
+# Completion
+complete -W "--left-only --right-only" trim

@@ -1,0 +1,10 @@
+;; Emacs configuration
+
+;; X-resources (Inhibit alpha)
+(setq inhibit-x-resources t)
+
+(package-initialize)
+(require 'package)
+
+(add-to-list 'package-archives
+  '("melpa" . "http://melpa.org/packages/") t)

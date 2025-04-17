@@ -1,0 +1,9 @@
+pkg_pkgs:
+  - ansible
+  - emacs
+  - firefox
+  - git
+  - linux-lts
+  - thunderbird
+  - zsh
+
