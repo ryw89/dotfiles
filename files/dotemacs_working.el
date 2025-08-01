@@ -298,5 +298,3 @@
 
 ;; --- Perl ---
 (add-to-list 'auto-mode-alist '("\\.p[lm]\\'" . cperl-mode))
-(add-hook 'cperl-mode-hook #'lsp)
-;; You'll need to install the server: cpanm Perl::LanguageServer
