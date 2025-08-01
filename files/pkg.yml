@@ -2,3 +2,6 @@ bootstrap_pkg:
   - ansible
   - emacs
   - git
+
+extra_pkg:
+  - pyright
