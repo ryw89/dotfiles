@@ -1,9 +1,45 @@
 ;; --- Emacs config ---
 
 ;; --- Basic customization ---
+;; 1. Load the package library. This defines all package-related symbols.
+(require 'package)
+
 ;; Ensure package system is ready (usually in main init, but doesn't hurt here)
 (setq package-enable-at-startup nil)
+
+;; Add MELPA Stable if you prefer more stable versions of packages
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+
+;; Initialize packages
 (package-initialize)
+
+;; A list of all packages to be installed and loaded
+(defvar my-required-packages
+  '(
+      magit
+      counsel
+      projectile
+      counsel-projectile
+      undo-tree
+      material-theme
+      multiple-cursors
+      lsp-mode
+      lsp-ui
+      lsp-pyright
+      company
+      exec-path-from-shell
+      ivy
+  )
+)
+
+;; Run this once to ensure package archives are up-to-date
+;(package-refresh-contents)
+
+(dolist (package my-required-packages)
+  (unless (package-installed-p package)
+    (message "Installing %s package..." package)
+    (package-install package)
+    (message "%s package installed." package)))
 
 ;; X-resources (Inhibit alpha)
 (setq inhibit-x-resources t)
@@ -27,6 +63,18 @@
 
 (setq split-height-threshold nil) ;; change default window split
 (setq split-width-threshold 0)
+
+;; --- Shell ---
+(global-set-key (kbd "C-t") 'shell)
+
+(add-hook 'sh-mode-hook
+          (lambda ()
+            ;; This is the most reliable way to set a key in a mode map.
+            ;; It explicitly modifies the sh-mode-map to bind C-c C-r to your function.
+            (define-key sh-mode-map (kbd "C-c C-r") 'my-eval-region)))
+
+;; Backups
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
 
 ;; --- Custom functions, etc. ---
 (defun file-string (file)
@@ -60,6 +108,12 @@
     ((eq major-mode 'python-mode)
      (python-shell-send-region))
 
+	;; Shell
+    ((eq major-mode 'sh-mode)
+     (process-send-region "*shell*" (region-beginning) (region-end))
+     ;; We add an explicit newline character to execute the command.
+     (process-send-string "*shell*" "\n"))
+
     ;; You could add more languages here
     ;; ((eq major-mode 'js-mode)
     ;;  (js-send-region ...))
@@ -69,67 +123,59 @@
 
 (global-set-key (kbd "C-c C-r") 'my-eval-region)
 
-;; --- Install Packages ---
-;; Auto-install Magit
-(unless (package-installed-p 'magit)
-  (message "Installing magit package...")
-  (package-refresh-contents)
-  (package-install 'magit)
-  (message "magit package installed."))
+;; toggle windows
+(defun my-window-split-toggle ()
+  "Toggle between horizontal and vertical split with two windows."
+  (interactive)
+  (if (> (length (window-list)) 2)
+      (error "Can't toggle with more than 2 windows!")
+    (let ((func (if (window-full-height-p)
+                    #'split-window-vertically
+                  #'split-window-horizontally)))
+      (delete-other-windows)
+      (funcall func)
+      (save-selected-window
+        (other-window 1)
+        (switch-to-buffer (other-buffer))))))
 
-;; Auto-install Counsel
-(unless (package-installed-p 'counsel)
-  (message "Installing counsel package...")
-  (package-refresh-contents)
-  (package-install 'counsel)
-  (message "counsel package installed."))
+(global-set-key (kbd "C-x t") 'my-window-split-toggle)
 
-;; Ensure projectile is installed
-(unless (package-installed-p 'projectile)
-  (message "Installing projectile package...")
-  (package-refresh-contents)
-  (package-install 'projectile))
+;; transpose windows
+(defun my-transpose-windows (arg)
+  "Transpose the buffers shown in two windows."
+  (interactive "p")
+  (let ((selector (if (>= arg 0) 'next-window 'previous-window)))
+    (while (/= arg 0)
+      (let ((this-win (window-buffer))
+            (next-win (window-buffer (funcall selector))))
+        (set-window-buffer (selected-window) next-win)
+        (set-window-buffer (funcall selector) this-win)
+        (select-window (funcall selector)))
+      (setq arg (if (> arg 0) (1- arg) (1+ arg))))))
 
-;; Ensure counsel-projectile is installed
-(unless (package-installed-p 'counsel-projectile)
-  (message "Installing counsel-projectile package...")
-  (package-refresh-contents)
-  (package-install 'counsel-projectile))
+(global-set-key (kbd "C-x y") 'my-transpose-windows)
 
-;; Auto-install undo-tree
-(unless (package-installed-p 'undo-tree)
-  (message "Installing undo-tree package...")
-  (package-refresh-contents)
-  (package-install 'undo-tree)
-  (message "undo-tree package installed."))
+ (defun my-transpose-windows (arg)
+   "Transpose the buffers shown in two windows."
+   (interactive "p")
+   (let ((selector (if (>= arg 0) 'next-window 'previous-window)))
+     (while (/= arg 0)
+       (let ((this-win (window-buffer))
+             (next-win (window-buffer (funcall selector))))
+         (set-window-buffer (selected-window) next-win)
+         (set-window-buffer (funcall selector) this-win)
+         (select-window (funcall selector)))
+       (setq arg (if (plusp arg) (1- arg) (1+ arg))))))
 
-;; Auto-install material-theme
-(unless (package-installed-p 'material-theme)
-  (message "Installing material-theme package...")
-  (package-refresh-contents)
-  (package-install 'material-theme)
-  (message "material-theme package installed."))
+(global-set-key (kbd "C-x y") 'my-transpose-windows)
 
-;; Auto-install lsp-mode
-(unless (package-installed-p 'lsp-mode)
-  (message "Installing lsp-mode package...")
-  (package-refresh-contents)
-  (package-install 'lsp-mode)
-  (message "lsp-mode package installed."))
+;; --- exec-path-from-shell
+(require 'exec-path-from-shell)
 
-;; Auto-install lsp-ui (highly recommended for better UI integration)
-(unless (package-installed-p 'lsp-ui)
-  (message "Installing lsp-ui package...")
-  (package-refresh-contents)
-  (package-install 'lsp-ui)
-  (message "lsp-ui package installed."))
-
-;; Auto-install company-mode if not already installed
-(unless (package-installed-p 'company)
-  (message "Installing company-mode package...")
-  (package-refresh-contents)
-  (package-install 'company)
-  (message "company-mode package installed."))
+;; Tell Emacs to get its PATH from zsh.
+;; The `exec-path-from-shell-shell-name` variable can be customized.
+;; This needs to run early in your init.el, after package setup.
+(exec-path-from-shell-initialize)
 
 ;; --- Magit ---
 (require 'magit)
@@ -142,7 +188,6 @@
 (setq recentf-max-saved-items 10000)
 (run-with-timer 0 (* 30 60) 'recentf-save-list)
 (global-set-key (kbd "C-c o r") 'counsel-recentf)
-(ivy-mode 1) ; Recommended for overall Ivy experience
 
 ;; --- Swiper ---
 ;; Ensure the 'ivy' package is installed. Swiper depends on Ivy.
@@ -151,6 +196,8 @@
   (package-refresh-contents) ; Make sure package list is up-to-date
   (package-install 'ivy)
   (message "ivy package installed."))
+
+(ivy-mode 1) ; Recommended for overall Ivy experience
 
 (require 'swiper)
 (global-set-key (kbd "C-s") 'swiper)
@@ -166,16 +213,14 @@
 (global-set-key (kbd "C-c p p") 'counsel-projectile-switch-project)
 (global-set-key (kbd "C-c p f") 'counsel-projectile-find-file)
 
-;; Optional but Recommended: Enable Ivy mode globally
-;; This makes other search/completion commands also use Ivy.
-;; If you already have (ivy-mode 1) for counsel-recentf, you don't need this again.
-(ivy-mode 1)
-
 ;; --- Undo-tree ---
 (require 'undo-tree)
 (global-undo-tree-mode 1)
 (global-set-key (kbd "C-z") 'undo-tree-undo)
 (global-set-key (kbd "C-S-z") 'undo-tree-redo)
+
+;; Configure undo-tree to save all history files to a central directory
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-history/")))
 
 ;; --- Org-mode ---
 ;; Change states in Org buffers easily
@@ -188,8 +233,18 @@
 
 ;; Load your desired Material theme
 (load-theme 'material t)
-;; Or for the light variant:
+
+; Or for the light variant:
 ;; (load-theme 'material-light t)
+
+;; -- multiple cursors --
+(global-set-key (kbd "C-c m c") 'mc/edit-lines)
+
+;; You may also want to bind the other useful functions to have access
+;; to both workflows. Here are some common bindings for them:
+;; (global-set-key (kbd "C-c m n") 'mc/mark-next-like-this)
+;; (global-set-key (kbd "C-c m p") 'mc/mark-previous-like-this)
+;; (global-set-key (kbd "C-c m a") 'mc/mark-all-like-this)				
 
 ;; --- company ---
 (require 'company)
@@ -211,16 +266,24 @@
 (require 'lsp-ui)
 
 ;; --- Python ---
-;; Enable lsp-mode in Python mode
-(add-hook 'python-mode-hook #'lsp)
+;; Bugs begin here ...
+;; --- Python with LSP (pyright) ---
+(require 'lsp-pyright)
+
+;; Explicitly set the executable path for the pyright client.
+;; This is the location `lsp-mode` will use when you tell it to.
+(setq lsp-pyright-executable "/usr/bin/pyright-langserver")
+
+;; Tell lsp-mode that pyright is the default server for Python.
+;; This is still a good idea, as it provides a clear preference.
+(setq lsp-python-default-server 'pyright)
+(setq lsp-enabled-clients '(pyright))
+
+;; A simple hook to enable lsp-mode whenever you open a Python file.
+(add-hook 'python-mode-hook #'lsp-deferred)
 
 ;; Optional: Enable lsp-ui mode for better UI elements (pop-ups, sidebar, etc.)
 (add-hook 'lsp-mode-hook #'lsp-ui-mode)
-
-;; Tell lsp-mode to use pyright for Python
-;; You'll need to install pyright in your Python environment: pip install pyright
-;; Or install it globally via npm: npm install -g pyright
-(setq lsp-pyright-executable (executable-find "pyright-langserver")) ;; Or "pyright" if installed via pip
 
 ;; --- YAML ---
 (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . yaml-mode))
