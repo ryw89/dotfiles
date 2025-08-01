@@ -1,131 +1,175 @@
-# argp
-export ARGP_HELP_FMT="no-dup-args-note"
+#!/bin/bash
 
-if [ "$INSIDE_EMACS" ]; then
-    export TERM=dumb-emacs-ansi COLORTERM=1
-    PROMPT_COMMAND=
-    export PS1='[%n@%m]%~$ '
-fi
+# This file can be used as either a .bashrc or .zshrc.
 
-# For Emacs Tramp
-[[ $TERM == "dumb" ]] && unsetopt zle && PS1='$ ' && return
-
-# git status
-autoload -Uz vcs_info
-precmd() { vcs_info 2>/dev/null }
-
-# Format the vcs_info_msg_0_ variable
-zstyle ':vcs_info:git:*' formats '%b'
-
-export PS1='[%n@%m]%~$ '
-
-# Right promp w/ git info
-autoload -U colors && colors
-RPROMPT=%{$fg[cyan]%}\$vcs_info_msg_0_%{$reset_color%}
-
-# History
-HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
-setopt SHARE_HISTORY
-
-# jump
-__jump_chpwd() {
-  jump chdir
-}
-
-jump_completion() {
-  reply="'$(jump hint "$@")'"
-}
-
-j() {
-  local dir="$(jump cd $@)"
-  test -d "$dir" && cd "$dir"
-}
-
-typeset -gaU chpwd_functions
-chpwd_functions+=__jump_chpwd
-
-compctl -U -K jump_completion j
-
-autoload -Uz compinit
-compinit
-setopt COMPLETE_ALIASES
-setopt PROMPT_SUBST
-zstyle ':completion:*' rehash true
-
+# --- Global Configuration ---
+# Aliases
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
-
-# oh-my-zsh
-export ZSH=/usr/share/oh-my-zsh/
-
-plugins=(
-    command-time
-    extract
-    fd
-    git
-)
-
-source $ZSH/oh-my-zsh.sh || true
-
-# command-time min seconds
-ZSH_COMMAND_TIME_MIN_SECONDS=300
-
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-# Additional keybindings
-if [ -z "$INSIDE_EMACS" ]; then
-    bindkey "^[[1;5C" forward-word
-    bindkey "^[[1;5D" backward-word
-fi
 
 # Editor
 export EDITOR="nano"
 
-# Node.js
-PATH="$HOME/.node_modules/bin:$PATH"
-export npm_config_prefix=~/.node_modules
+# argp
+export ARGP_HELP_FMT="no-dup-args-note"
 
-# Go
+# History
+HISTSIZE=10000
+SAVEHIST=10000
+if [[ -n "$ZSH_VERSION" ]]; then
+  HISTFILE=~/.zsh_history
+else
+  HISTFILE=~/.bash_history
+fi
+
+# --- Emacs Integration ---
+if [ -n "$INSIDE_EMACS" ]; then
+    export TERM=dumb-emacs-ansi COLORTERM=1
+
+    if [[ -n "$ZSH_VERSION" ]]; then
+      [[ $TERM == "dumb" ]] && unsetopt zle && PS1='$ ' && return
+    fi
+
+    export PROMPT_COMMAND=
+    export PS1='[%n@%m]%~$ '
+fi
+
+# Check if we are running in Zsh
+if [[ -n "$ZSH_VERSION" ]]; then
+
+  # --- Zsh-specific Prompt Configuration ---
+  # Only runs if the shell is Zsh.
+
+  # Initialize vcs_info for git status
+  autoload -Uz vcs_info
+
+  # Set a pre-command hook to run vcs_info before each prompt
+  precmd() {
+    vcs_info 2>/dev/null
+  }
+
+  # Format the vcs_info_msg_0_ variable to display only the branch name
+  zstyle ':vcs_info:git:*' formats '%b'
+
+  # Configure the right prompt with the git info
+  autoload -U colors && colors
+  export RPROMPT='%{$fg[cyan]%}$vcs_info_msg_0_%{$reset_color%}'
+
+  setopt SHARE_HISTORY
+
+  typeset -gaU chpwd_functions
+  chpwd_functions+=__jump_chpwd
+
+  compctl -U -K jump_completion j
+
+  autoload -Uz compinit
+  compinit
+  setopt COMPLETE_ALIASES
+  setopt PROMPT_SUBST
+  zstyle ':completion:*' rehash true
+
+  # oh-my-zsh
+  export ZSH=/usr/share/oh-my-zsh/
+
+  plugins=(
+      command-time
+      extract
+      fd
+      git
+  )
+
+  source $ZSH/oh-my-zsh.sh >/dev/null || true
+
+  # command-time min seconds
+  ZSH_COMMAND_TIME_MIN_SECONDS=300
+
+  # Additional keybindings
+  if [ -z "$INSIDE_EMACS" ]; then
+      bindkey "^[[1;5C" forward-word
+      bindkey "^[[1;5D" backward-word
+  fi
+
+  # Configure the left prompt
+  export PS1='[%n@%m]%~$ '
+
+# If not Zsh, assume Bash or a Bash-compatible shell
+else
+  # --- Bash Prompt ---
+
+  # This function gets the current Git branch name
+  parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+  }
+
+  # The Bash PS1 variable with Git status
+  export PS1='[\u@\h]\w$(parse_git_branch)\$ '
+
+fi
+
+# --- jump ---
+# Make this block robust to no "jump" on PATH
+if command -v jump &>/dev/null; then
+
+  # The 'j' function is shell-agnostic and works in both Bash and Zsh
+  j() {
+    local dir="$(jump cd "$@")"
+    test -d "$dir" && cd "$dir"
+  }
+
+  # Now, set up the shell-specific features
+  if [[ -n "$ZSH_VERSION" ]]; then
+    # Zsh-specific hooks and completion
+    autoload -Uz compinit
+    compinit
+    setopt COMPLETE_ALIASES
+    setopt PROMPT_SUBST
+    zstyle ':completion:*' rehash true
+
+    typeset -gaU chpwd_functions
+    chpwd_functions+=__jump_chpwd
+
+    compctl -U -K jump_completion j
+
+    __jump_chpwd() {
+      jump chdir
+    }
+
+    jump_completion() {
+      reply="'$(jump hint "$@")'"
+    }
+  else
+    # Bash-specific completion
+    # This associates the `j` command with the Bash-style completion function
+    _jump_completion() {
+      COMPREPLY=($(jump hint "$@"))
+    }
+    complete -F _jump_completion j
+  fi
+
+fi
+
+# I use ~/.bash_aliases for both bash and zsh
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# --- PATH configuration ---
+export PATH=~/.local/bin:$PATH
+export PATH=~/.cargo/bin:$PATH
+export PATH=~/perl5/bin:$PATH
+
 export GOROOT=/usr/lib/go
 export GOPATH=$HOME/go
 export GOBIN=$HOME/go/bin
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 
-# Python
-export PATH=~/.local/bin:$PATH
+# Node.js
+export npm_config_prefix=~/.node_modules
+PATH="$HOME/.node_modules/bin:$PATH"
 
-# Rust
-export PATH=~/.cargo/bin:$PATH
-
-# Matlab
-export PATH=$PATH:~/MATLAB/bin
-
-# Parquet tools
-export PATH=$PATH:/usr/share/java/parquet-tools/
-
-# Spark
-export PATH=$PATH:/opt/apache-spark/bin
-
-# nvm
-#unset npm_config_prefix
-#export PATH=/home/ryanw/.nvm/versions/node/v16.4.0/bin/:$PATH
-#source /usr/share/nvm/init-nvm.sh
-
-# Completion
-complete -W "--left-only --right-only" trim
-
-# perl
-export PATH=$PATH:~/perl5/bin
-
-# Set up a local Perl lib and ensure the environment is configured
+# --- Other Configurations ---
 cpanm --local-lib=~/perl5 local::lib >/dev/null \
   && eval "$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)" \
   || true
 
-# npm
 npm config set prefix '~/.local' || true
-export PATH=~/.local/bin:$PATH
