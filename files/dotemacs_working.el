@@ -221,3 +221,19 @@
 ;; You'll need to install pyright in your Python environment: pip install pyright
 ;; Or install it globally via npm: npm install -g pyright
 (setq lsp-pyright-executable (executable-find "pyright-langserver")) ;; Or "pyright" if installed via pip
+
+;; --- YAML ---
+(add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . yaml-mode))
+(add-hook 'yaml-mode-hook #'lsp)
+;; You'll need to install the server: npm install -g yaml-language-server
+
+;; --- shell ---
+(add-hook 'sh-mode-hook #'lsp)
+;; For Dockerfiles
+(add-to-list 'auto-mode-alist '("Dockerfile\\'" . sh-mode))
+;; You'll need to install the server: npm install -g bash-language-server
+
+;; --- Perl ---
+(add-to-list 'auto-mode-alist '("\\.p[lm]\\'" . cperl-mode))
+(add-hook 'cperl-mode-hook #'lsp)
+;; You'll need to install the server: cpanm Perl::LanguageServer
