@@ -1,0 +1,21 @@
+---
+# tasks file for bootstrap
+
+- name: Copy zshrc to the user's home directory
+  ansible.builtin.copy:
+    src: zshrc
+    dest: "/home/{{ bootstrap_user }}/.zshrc"
+    owner: "{{ bootstrap_user }}"
+    mode: '0644'
+
+- name: Create .bashrc symlink to .zshrc
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_user }}/.bashrc"
+    src: ".zshrc"
+    owner: "{{ bootstrap_user }}"
+    state: link
+
+- name: Change the user's default shell to zsh
+  ansible.builtin.user:
+    name: "{{ bootstrap_user }}"
+    shell: /usr/bin/zsh
