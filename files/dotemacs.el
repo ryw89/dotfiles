@@ -30,6 +30,7 @@
       exec-path-from-shell
       ivy
 	  rg
+	  yaml-mode
   )
 )
 
@@ -275,7 +276,7 @@
 
 ;; --- YAML ---
 (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . yaml-mode))
-(add-hook 'yaml-mode-hook #'lsp)
+;(add-hook 'yaml-mode-hook #'lsp)
 ;; You'll need to install the server: npm install -g yaml-language-server
 
 ;; --- shell ---
