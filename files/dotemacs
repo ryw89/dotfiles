@@ -1,0 +1,116 @@
+;; init.el --- Emacs configuration
+
+;; SYNC WITH DROPBOX
+
+
+;; Added by Package.el.  This must come before configurations of
+;; installed packages.  Don't delete this line.  If you don't want it,
+;; just comment it out by adding a semicolon to the start of the line.
+;; You may delete these explanatory comments.
+(package-initialize)
+
+(if (file-exists-p "~/Dropbox/Emacs/init.el") (load "~/Dropbox/Emacs/init.el")) 
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ansi-color-faces-vector
+   [default bold shadow italic underline bold bold-italic bold])
+ '(ansi-color-names-vector
+   (vector "#ffffff" "#f36c60" "#8bc34a" "#fff59d" "#4dd0e1" "#b39ddb" "#81d4fa" "#263238"))
+ '(custom-safe-themes
+   '("d4f8fcc20d4b44bf5796196dbeabec42078c2ddb16dcb6ec145a1c610e0842f3" "68d8ceaedfb6bdd2909f34b8b51ceb96d7a43f25310a55c701811f427e9de3a3" "732b807b0543855541743429c9979ebfb363e27ec91e82f463c91e68c772f6e3" "672bb062b9c92e62d7c370897b131729c3f7fd8e8de71fc00d70c5081c80048c" "b050365105e429cb517d98f9a267d30c89336e36b109a1723d95bc0f7ce8c11d" "6ac7c0f959f0d7853915012e78ff70150bfbe2a69a1b703c3ac4184f9ae3ae02" "021720af46e6e78e2be7875b2b5b05344f4e21fad70d17af7acfd6922386b61e" "ed0b4fc082715fc1d6a547650752cd8ec76c400ef72eb159543db1770a27caa7" "42b9d85321f5a152a6aef0cc8173e701f572175d6711361955ecfb4943fe93af" "a4d03266add9a1c8f12b5309612cbbf96e1291773c7bc4fb685bfdaf83b721c6" "b9cbfb43711effa2e0a7fbc99d5e7522d8d8c1c151a3194a4b176ec17c9a8215" "9a155066ec746201156bb39f7518c1828a73d67742e11271e4f24b7b178c4710" "a24c5b3c12d147da6cef80938dca1223b7c7f70f2f382b26308eba014dc4833a" "e11569fd7e31321a33358ee4b232c2d3cf05caccd90f896e1df6cab228191109" default))
+ '(doc-view-continuous t)
+ '(elfeed-feeds
+   '("http://feeds.marketwatch.com/marketwatch/topstories/"
+	 ("https://www.progressivedatajobs.org/feed.xml" jobs)
+	 ("https://groups.google.com/forum/feed/jobsthatareleft/topics/rss.xml?num=50" jobs)
+	 ("https://www.budgettravel.com/rss" travel)
+	 ("http://www.reddit.com/r/rstats/.rss" stats blogs r)
+	 ("http://feeds.feedburner.com/RBloggers" stats blogs r)
+	 ("http://andrewgelman.com/feed/" stats blogs polisci)
+	 ("http://www.reddit.com/r/Python/.rss" programming python)
+	 ("http://importpython.com/blog/feed/" programming python)
+	 ("http://pbpython.com/feeds/all.atom.xml" programming python)
+	 ("http://www.blog.pythonlibrary.org/feed/" programming python)
+	 ("http://www.reddit.com/r/emacs/.rss" programming emacs)
+	 ("http://planet.emacsen.org/atom.xml" programming emacs)
+	 ("http://sachachua.com/blog/feed/" programming emacs)
+	 ("https://blog.aaronbieber.com/feed.xml" programming emacs)
+	 ("https://amigotechnology.com/feed/" programming)
+	 ("http://cestlaz.github.io/rss.xml" programming)
+	 ("http://www.reddit.com/r/ProgrammerHumor/.rss" programming humor)
+	 ("https://opensource.com/feed" programming)
+	 ("https://pitchfork.com/rss/reviews/best/albums/" music)
+	 ("https://onlinelibrary.wiley.com/action/showFeed?jc=14680262&type=etoc&feed=rss" econ journals)
+	 ("https://muse.jhu.edu/feeds/latest_articles?jid=208" polisci journals)
+	 ("https://muse.jhu.edu/feeds/latest_articles?jid=98" polisci journals)
+	 ("https://muse.jhu.edu/feeds/latest_articles?jid=499" polisci journals)
+	 ("https://muse.jhu.edu/feeds/latest_articles?jid=77" polisci journals)
+	 ("https://onlinelibrary.wiley.com/action/showFeed?jc=15482456&type=etoc&feed=rss" polisci journals)
+	 ("https://onlinelibrary.wiley.com/action/showFeed?jc=14682478&type=etoc&feed=rss" polisci journals)
+	 ("https://onlinelibrary.wiley.com/action/showFeed?jc=15405907&type=etoc&feed=rss" polisci journals)
+	 ("https://www.annualreviews.org/action/showFeed?jc=polisci&type=etoc&feed=rss" polisci journals)
+	 ("https://www.tandfonline.com/action/showFeed?type=etoc&feed=rss&jc=fdem20" polisci journals)
+	 ("https://www.tandfonline.com/action/showFeed?type=etoc&feed=rss&jc=gini20" polisci journals)
+	 ("http://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=prqb&type=axatoc&feed=rss" polisci journals)
+	 ("http://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=cpsa&type=axatoc&feed=rss" polisci journals)
+	 ("http://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=cmpb&type=axatoc&feed=rss" polisci journals)
+	 ("http://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=jpra&type=axatoc&feed=rss" polisci journals)
+	 ("http://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=jcrb&type=axatoc&feed=rss" polisci journals)
+	 ("https://www.cambridge.org/core/rss/product/id/833A7242AC7B607BA7F6168DA072DB3B" polisci journals)
+	 ("http://feeds.washingtonpost.com/rss/rss_monkey-cage" polisci blogs)
+	 ("http://saideman.blogspot.com/feeds/posts/default" polisci blogs)
+	 ("https://politicalviolenceataglance.org/feed/" polisci blogs)
+	 ("http://feeds.washingtonpost.com/rss/politics" news politics)
+	 ("http://www.reddit.com/r/politics/.rss" news politics)
+	 ("https://www.nytimes.com/services/xml/rss/nyt/HomePage.xml" news)
+	 ("https://andrewskurka.com/feed/" hikecamp blogs)
+	 ("https://www.reddit.com/r/CampingandHiking/.rss" hikecamp)))
+ '(fci-rule-color "#37474f")
+ '(hl-sexp-background-color "#1c1f26")
+ '(package-selected-packages
+   '(org-roam ace-popup-menu ess-view-data nasm-mode elixir-mode yasnippet-radical-snippets yasnippet-snippets company-emacs-eclim lsp-treemacs lsp-java sbt-mode scala-mode flycheck-clang-tidy flycheck-rust jenkinsfile-mode groovy-mode jenkins flycheck-clang-analyzer realgud chess helm-notmuch counsel-notmuch notmuch tide graphql-mode rjsx-mode flymake-jslint prettier-js xref-js2 js2-refactor js2-mode ztree arduino-mode lsp-ui lsp-mode solarized-theme py-yapf yaml-mode vterm clang-format+ clang-format cargo matlab-mode shell-pop rubocop metaweblog xml-rpc org-gcal alert w3m magit pdf-tools pydoc evil-mc evil-multiedit stan-mode exec-path-from-shell gorepl-mode ranger iy-go-to-char rg wc-mode wttrin gruvbox-theme darktooth-theme ace-window org-ref org-noter elfeed-org dashboard page-break-lines evil elfeed slirm rainbow-delimiters gscholar-bibtex helm-bibtex dired-sidebar undo-tree py-autopep8 multiple-cursors material-theme leuven-theme flycheck fill-column-indicator ess elpy ein buffer-move bind-key better-defaults auctex))
+ '(pos-tip-background-color "#36473A")
+ '(pos-tip-foreground-color "#FFFFC8")
+ '(send-mail-function 'mailclient-send-it)
+ '(vc-annotate-background nil)
+ '(vc-annotate-color-map
+   '((20 . "#f36c60")
+	 (40 . "#ff9800")
+	 (60 . "#fff59d")
+	 (80 . "#8bc34a")
+	 (100 . "#81d4fa")
+	 (120 . "#4dd0e1")
+	 (140 . "#b39ddb")
+	 (160 . "#f36c60")
+	 (180 . "#ff9800")
+	 (200 . "#fff59d")
+	 (220 . "#8bc34a")
+	 (240 . "#81d4fa")
+	 (260 . "#4dd0e1")
+	 (280 . "#b39ddb")
+	 (300 . "#f36c60")
+	 (320 . "#ff9800")
+	 (340 . "#fff59d")
+	 (360 . "#8bc34a")))
+ '(vc-annotate-very-old-color nil))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:family "DejaVu Sans Mono" :foundry "PfEd" :slant normal :weight normal :height 111 :width normal))))
+ '(company-tooltip ((t (:inherit default :background "#2a373e"))))
+ '(company-tooltip-common ((t (:inherit font-lock-constant-face))))
+ '(company-tooltip-scrollbar-thumb ((t (:background "#303f47"))))
+ '(company-tooltip-scrollbar-track ((t (:background "#3a4d56"))))
+ '(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
+ '(magit-diff-added ((((type tty)) (:foreground "green"))))
+ '(magit-diff-added-highlight ((((type tty)) (:foreground "LimeGreen"))))
+ '(magit-diff-context-highlight ((((type tty)) (:foreground "default"))))
+ '(magit-diff-file-heading ((((type tty)) nil)))
+ '(magit-diff-removed ((((type tty)) (:foreground "red"))))
+ '(magit-diff-removed-highlight ((((type tty)) (:foreground "IndianRed"))))
+ '(magit-section-highlight ((((type tty)) nil))))

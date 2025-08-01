@@ -30,7 +30,23 @@ SAVEHIST=10000
 setopt SHARE_HISTORY
 
 # jump
-which jump && eval "$(SHELL=zsh jump shell)"
+__jump_chpwd() {
+  jump chdir
+}
+
+jump_completion() {
+  reply="'$(jump hint "$@")'"
+}
+
+j() {
+  local dir="$(jump cd $@)"
+  test -d "$dir" && cd "$dir"
+}
+
+typeset -gaU chpwd_functions
+chpwd_functions+=__jump_chpwd
+
+compctl -U -K jump_completion j
 
 autoload -Uz compinit
 compinit
@@ -40,6 +56,21 @@ zstyle ':completion:*' rehash true
 
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
+
+# oh-my-zsh
+export ZSH=/usr/share/oh-my-zsh/
+
+plugins=(
+    command-time
+    extract
+    fd
+    git
+)
+
+source $ZSH/oh-my-zsh.sh || true
+
+# command-time min seconds
+ZSH_COMMAND_TIME_MIN_SECONDS=300
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
@@ -54,6 +85,10 @@ fi
 # Editor
 export EDITOR="nano"
 
+# Node.js
+PATH="$HOME/.node_modules/bin:$PATH"
+export npm_config_prefix=~/.node_modules
+
 # Go
 export GOROOT=/usr/lib/go
 export GOPATH=$HOME/go
@@ -65,6 +100,20 @@ export PATH=~/.local/bin:$PATH
 
 # Rust
 export PATH=~/.cargo/bin:$PATH
+
+# Matlab
+export PATH=$PATH:~/MATLAB/bin
+
+# Parquet tools
+export PATH=$PATH:/usr/share/java/parquet-tools/
+
+# Spark
+export PATH=$PATH:/opt/apache-spark/bin
+
+# nvm
+#unset npm_config_prefix
+#export PATH=/home/ryanw/.nvm/versions/node/v16.4.0/bin/:$PATH
+#source /usr/share/nvm/init-nvm.sh
 
 # Completion
 complete -W "--left-only --right-only" trim

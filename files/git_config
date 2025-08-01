@@ -1,0 +1,25 @@
+[user]
+  email = ryanwhittingham89@gmail.com
+  name = Ryan Whittingham
+  signingkey = 7374F3E1F1712631D8D5D2D145BD918C3CD3DE86
+
+[diff "pandoc"]
+  textconv=pandoc --to=markdown
+  prompt = false
+
+[alias]
+  wdiff = diff --word-diff=color --unified=1
+
+[credential]
+  helper = !aws codecommit credential-helper $@
+  UseHttpPath = true
+
+[pull]
+  rebase = false
+
+[branch]
+  autoSetupMerge = always
+
+[init]
+  templateDir = /home/ryanw/.git-template
+  defaultBranch = master
