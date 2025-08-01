@@ -29,6 +29,7 @@
       company
       exec-path-from-shell
       ivy
+	  rg
   )
 )
 
@@ -40,6 +41,9 @@
     (message "Installing %s package..." package)
     (package-install package)
     (message "%s package installed." package)))
+
+;; --- exec-path-from-shell
+(require 'exec-path-from-shell)
 
 ;; X-resources (Inhibit alpha)
 (setq inhibit-x-resources t)
@@ -64,11 +68,23 @@
 (setq split-height-threshold nil) ;; change default window split
 (setq split-width-threshold 0)
 
+;; Enable synchronization with the system clipboard
+(setq select-enable-clipboard t)
+
+;; On Linux (X11), also enable synchronization with the primary selection.
+;; This allows you to paste with the middle mouse button.
+(setq select-enable-primary t)
+
 ;; --- Shell ---
 (global-set-key (kbd "C-t") 'shell)
 
+;; Add a hook that checks the filename before starting LSP
 (add-hook 'sh-mode-hook
           (lambda ()
+            ;; Only start LSP if the file is NOT your zshrc
+            (unless (string-match-p "zshrc" (buffer-file-name))
+              (lsp-deferred))
+
             ;; This is the most reliable way to set a key in a mode map.
             ;; It explicitly modifies the sh-mode-map to bind C-c C-r to your function.
             (define-key sh-mode-map (kbd "C-c C-r") 'my-eval-region)))
@@ -100,26 +116,14 @@
   "Evaluate region based on the current major mode."
   (interactive)
   (cond
-    ;; If it's an Elisp buffer, evaluate as Elisp
     ((eq major-mode 'emacs-lisp-mode)
      (eval-region (region-beginning) (region-end)))
-
-    ;; If it's a Python buffer, send to the Python shell
     ((eq major-mode 'python-mode)
      (python-shell-send-region))
-
-	;; Shell
     ((eq major-mode 'sh-mode)
      (process-send-region "*shell*" (region-beginning) (region-end))
-     ;; We add an explicit newline character to execute the command.
      (process-send-string "*shell*" "\n"))
-
-    ;; You could add more languages here
-    ;; ((eq major-mode 'js-mode)
-    ;;  (js-send-region ...))
-
-    ;; Otherwise, use the standard `eval-region` for any other language
-    (t (eval-region (region-beginning) (region-end)))))
+    (t (error "No custom eval function for %s" major-mode))))
 
 (global-set-key (kbd "C-c C-r") 'my-eval-region)
 
@@ -155,23 +159,6 @@
 
 (global-set-key (kbd "C-x y") 'my-transpose-windows)
 
- (defun my-transpose-windows (arg)
-   "Transpose the buffers shown in two windows."
-   (interactive "p")
-   (let ((selector (if (>= arg 0) 'next-window 'previous-window)))
-     (while (/= arg 0)
-       (let ((this-win (window-buffer))
-             (next-win (window-buffer (funcall selector))))
-         (set-window-buffer (selected-window) next-win)
-         (set-window-buffer (funcall selector) this-win)
-         (select-window (funcall selector)))
-       (setq arg (if (plusp arg) (1- arg) (1+ arg))))))
-
-(global-set-key (kbd "C-x y") 'my-transpose-windows)
-
-;; --- exec-path-from-shell
-(require 'exec-path-from-shell)
-
 ;; Tell Emacs to get its PATH from zsh.
 ;; The `exec-path-from-shell-shell-name` variable can be customized.
 ;; This needs to run early in your init.el, after package setup.
@@ -190,13 +177,6 @@
 (global-set-key (kbd "C-c o r") 'counsel-recentf)
 
 ;; --- Swiper ---
-;; Ensure the 'ivy' package is installed. Swiper depends on Ivy.
-(unless (package-installed-p 'ivy)
-  (message "Installing ivy package (required for swiper)...")
-  (package-refresh-contents) ; Make sure package list is up-to-date
-  (package-install 'ivy)
-  (message "ivy package installed."))
-
 (ivy-mode 1) ; Recommended for overall Ivy experience
 
 (require 'swiper)
@@ -260,10 +240,19 @@
 ;; C-n and C-p for navigating completions (same as standard Emacs)
 (global-set-key (kbd "M-p") 'company-complete)
 
+;; --- ripgrep ---
+(global-set-key (kbd "C-c r g") 'rg)
+(global-set-key (kbd "C-c p r g") 'projectile-ripgrep)
+
 ;; -- Language-specific configs ---
 ;; --- LSP ---
 (require 'lsp-mode)
 (require 'lsp-ui)
+
+;(add-to-list 'safe-local-variable-values '(lsp-enable-client . nil))
+
+;; Combined LSP clients list
+(setq lsp-enabled-clients '(pyright perls bash-ls))
 
 ;; --- Python ---
 ;; Bugs begin here ...
@@ -277,7 +266,6 @@
 ;; Tell lsp-mode that pyright is the default server for Python.
 ;; This is still a good idea, as it provides a clear preference.
 (setq lsp-python-default-server 'pyright)
-(setq lsp-enabled-clients '(pyright))
 
 ;; A simple hook to enable lsp-mode whenever you open a Python file.
 (add-hook 'python-mode-hook #'lsp-deferred)
