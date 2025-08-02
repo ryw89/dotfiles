@@ -7,3 +7,7 @@
 - name: Set up shell
   ansible.builtin.include_tasks:
     file: shell.yml
+
+- name: Set up Emacs
+  ansible.builtin.include_tasks:
+    file: emacs.yml

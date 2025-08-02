@@ -1,0 +1,14 @@
+---
+# tasks file for emacs
+- name: Ensure ~/.emacs.d directory
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_user }}/.emacs.d"
+    state: directory
+    mode: '0755'
+
+- name: Ensure Emacs init file
+  ansible.builtin.copy:
+    src: dotemacs.el
+    dest: "/home/{{ bootstrap_user }}/.emacs.d/init.el"
+    owner: "{{ bootstrap_user }}"
+    mode: '0644'
