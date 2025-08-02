@@ -9,8 +9,8 @@ _minimal_bootstrap_pkg:
   - zsh
 
 _bootstrap_pkg_extra:
-   - pyright
-   - cpanminus
+  - pyright
+  - cpanminus
 
 # All packages to install using bootstrap Ansible role.
 bootstrap_pkg: "{{ _minimal_bootstrap_pkg + _bootstrap_pkg_extra }}"
