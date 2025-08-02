@@ -1,0 +1,7 @@
+---
+# tasks file for pkg
+- name: Ensure packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ bootstrap_pkg }}"
+    state: present

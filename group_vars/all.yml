@@ -1,9 +1,16 @@
-pkg_pkgs:
+# This is a standard Ansible group_vars/all.yml file.
+#
+# However, this variable is also ingested by bootstrap.sh.
+_minimal_bootstrap_pkg:
   - ansible
+  - bash
   - emacs
-  - firefox
   - git
-  - linux-lts
-  - thunderbird
   - zsh
 
+_bootstrap_pkg_extra:
+   - pyright
+   - cpanminus
+
+# All packages to install using bootstrap Ansible role.
+bootstrap_pkg: "{{ _minimal_bootstrap_pkg + _bootstrap_pkg_extra }}"

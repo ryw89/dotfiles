@@ -1,0 +1,9 @@
+- name: Set up my environment
+
+  gather_facts: true
+  hosts: localhost
+
+  tasks:
+    - name: Run bootstrap Ansible role
+      ansible.builtin.include_role:
+        name: bootstrap
