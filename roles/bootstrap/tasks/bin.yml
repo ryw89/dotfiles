@@ -1,0 +1,13 @@
+---
+# tasks file for bin
+- name: Ensure ~/.local/bin directory
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_user }}/.local/bin"
+    state: directory
+    mode: '0755'
+
+- name: Ensure ssh-agent-add.sh script
+  ansible.builtin.copy:
+    src: ssh-agent-add.sh
+    dest: "/home/{{ bootstrap_user }}/.local/bin/ssh-agent-add.sh"
+    mode: '0755'
