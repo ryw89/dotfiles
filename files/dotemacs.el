@@ -16,21 +16,23 @@
 ;; A list of all packages to be installed and loaded
 (defvar my-required-packages
   '(
-      magit
+      company
       counsel
-      projectile
       counsel-projectile
-      undo-tree
+      exec-path-from-shell
+      gptel
+      ivy
+      lsp-mode
+      lsp-pyright
+      lsp-ui
+      magit
       material-theme
       multiple-cursors
-      lsp-mode
-      lsp-ui
-      lsp-pyright
-      company
-      exec-path-from-shell
-      ivy
-	  rg
-	  yaml-mode
+      projectile
+      rg
+      undo-tree
+      use-package
+      yaml-mode
   )
 )
 
@@ -42,6 +44,7 @@
     (message "Installing %s package..." package)
     (package-install package)
     (message "%s package installed." package)))
+
 
 ;; --- exec-path-from-shell
 (require 'exec-path-from-shell)
@@ -124,7 +127,8 @@
     ((eq major-mode 'sh-mode)
      (process-send-region "*shell*" (region-beginning) (region-end))
      (process-send-string "*shell*" "\n"))
-    (t (error "No custom eval function for %s" major-mode))))
+	;; Default to `eval-region`
+    (t (eval-region (region-beginning) (region-end)))))
 
 (global-set-key (kbd "C-c C-r") 'my-eval-region)
 
@@ -168,6 +172,17 @@
 ;; --- Magit ---
 (require 'magit)
 
+;; Remove background for diff-added and diff-removed
+(custom-set-faces
+ '(diff-added ((t (:foreground "green" :background nil))))
+ '(diff-removed ((t (:foreground "red" :background nil))))
+ ;; For magit-specific faces
+ '(magit-diff-added ((t (:foreground "green" :background nil))))
+ '(magit-diff-removed ((t (:foreground "red" :background nil))))
+ '(magit-diff-added-highlight ((t (:foreground "green" :background nil))))
+ '(magit-diff-removed-highlight ((t (:foreground "red" :background nil))))
+)
+
 ;; --- Recentf and Counsel ---
 (require 'recentf)
 (require 'counsel)
@@ -207,6 +222,22 @@
 ;; Change states in Org buffers easily
 (setq org-support-shift-select t)
 
+(setq org-todo-keywords
+      '((sequence "TODO" "NEXT" "CURR" "|" "DONE" "CNCL" "SUSP" "VRFY")))
+
+(setq org-todo-keyword-faces
+ '(
+    ("NEXT" .
+      (:foreground "khaki"
+       :background "dark goldenrod"
+       :weight bold))
+    ("CURR" .
+      (:foreground "light blue"
+       :background "midnight blue"
+       :weight bold))
+  )
+)
+
 ;; --- Theme ---
 ;; Optional: Disable other themes first for a clean slate
 (dolist (theme custom-enabled-themes)
@@ -220,12 +251,6 @@
 
 ;; -- multiple cursors --
 (global-set-key (kbd "C-c m c") 'mc/edit-lines)
-
-;; You may also want to bind the other useful functions to have access
-;; to both workflows. Here are some common bindings for them:
-;; (global-set-key (kbd "C-c m n") 'mc/mark-next-like-this)
-;; (global-set-key (kbd "C-c m p") 'mc/mark-previous-like-this)
-;; (global-set-key (kbd "C-c m a") 'mc/mark-all-like-this)				
 
 ;; --- company ---
 (require 'company)
@@ -287,3 +312,9 @@
 
 ;; --- Perl ---
 (add-to-list 'auto-mode-alist '("\\.p[lm]\\'" . cperl-mode))
+
+;; --- custom ---
+(setq custom-file "~/.emacs.d/custom.el")
+
+(when (file-exists-p custom-file)
+  (load custom-file))
