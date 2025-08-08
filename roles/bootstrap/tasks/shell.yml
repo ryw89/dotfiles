@@ -13,8 +13,10 @@
     src: ".zshrc"
     owner: "{{ bootstrap_user }}"
     state: link
+    force: true
 
 - name: Ensure the user's default shell is zsh
+  become: true
   ansible.builtin.user:
     name: "{{ bootstrap_user }}"
     shell: /bin/zsh
