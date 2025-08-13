@@ -32,7 +32,6 @@
       rg
       undo-tree
       use-package
-      yaml-mode
   )
 )
 
@@ -45,9 +44,13 @@
     (package-install package)
     (message "%s package installed." package)))
 
-
-;; --- exec-path-from-shell
-(require 'exec-path-from-shell)
+;; load-path
+(let ((lisp-dir (expand-file-name "lisp" user-emacs-directory)))
+  ;; Support subdirectories in lisp/
+  (when (file-directory-p lisp-dir)
+    (add-to-list 'load-path lisp-dir)
+    (let ((default-directory lisp-dir))
+      (normal-top-level-add-subdirs-to-load-path))))
 
 ;; X-resources (Inhibit alpha)
 (setq inhibit-x-resources t)
@@ -72,26 +75,125 @@
 (setq split-height-threshold nil) ;; change default window split
 (setq split-width-threshold 0)
 
-;; Enable synchronization with the system clipboard
-(setq select-enable-clipboard t)
-
-;; On Linux (X11), also enable synchronization with the primary selection.
-;; This allows you to paste with the middle mouse button.
-(setq select-enable-primary t)
-
 ;; --- Shell ---
 (global-set-key (kbd "C-t") 'shell)
 
-;; Add a hook that checks the filename before starting LSP
 (add-hook 'sh-mode-hook
           (lambda ()
-            ;; Only start LSP if the file is NOT your zshrc
-            (unless (string-match-p "zshrc" (buffer-file-name))
-              (lsp-deferred))
-
             ;; This is the most reliable way to set a key in a mode map.
             ;; It explicitly modifies the sh-mode-map to bind C-c C-r to your function.
             (define-key sh-mode-map (kbd "C-c C-r") 'my-eval-region)))
+
+(defun my/shell-history-file ()
+  "Return the history file path for the current shell."
+  (let* ((shell (or (getenv "SHELL") "/bin/bash"))
+         (shell-name (file-name-nondirectory shell)))
+    (cond
+     ((string= shell-name "zsh")
+      (expand-file-name "~/.zsh_history"))
+     ((string= shell-name "bash")
+      (expand-file-name "~/.bash_history"))
+     (t
+      (expand-file-name "~/.bash_history")))))
+
+(defun my/read-shell-history (file)
+  "Read shell history lines from FILE, cleaning up as needed."
+  (when (file-readable-p file)
+    (with-temp-buffer
+      (insert-file-contents file)
+      (let ((lines (split-string (buffer-string) "\n" t)))
+        (cond
+         ;; zsh history has : 1690000000:0;command
+         ((string-match-p "\\.zsh_history\\'" file)
+          (mapcar (lambda (line)
+                    (if (string-match ";\\(.*\\)$" line)
+                        (match-string 1 line)
+                      line))
+                  lines))
+         ;; bash history is just lines of commands
+         (t lines))))))
+
+(defun my/counsel-shell-history ()
+  "Counsel interface to shell history in *shell* buffers."
+  (interactive)
+  (let ((histfile (my/shell-history-file)))
+    (ivy-read "Shell history: "
+              (delete-dups (reverse (my/read-shell-history histfile)))
+              :action (lambda (cmd)
+                        (when (and (derived-mode-p 'shell-mode)
+                                   (get-buffer-process (current-buffer)))
+                          (goto-char (point-max))
+                          (insert cmd)))
+              :caller 'my/counsel-shell-history)))
+
+;; bind to C-r in shell-mode
+(with-eval-after-load 'shell
+  (define-key shell-mode-map (kbd "C-r") #'my/counsel-shell-history))
+
+(defun my/shell-cd-to-current-file-dir ()
+  "Change *shell* buffer's directory to the directory of the current buffer's file."
+  (interactive)
+  (let* ((file (buffer-file-name))
+         (dir (and file (file-name-directory file))))
+    (if (not dir)
+        (message "Current buffer is not visiting a file.")
+      (let ((shell-buf (get-buffer "*shell*")))
+        (if (not shell-buf)
+            (message "No *shell* buffer found.")
+          (with-current-buffer shell-buf
+            (comint-send-string shell-buf (concat "cd " (shell-quote-argument dir) "\n")))
+          (message "Sent 'cd' to *shell*: %s" dir))))))
+
+(global-set-key (kbd "C-c C-d") #'my/shell-cd-to-current-file-dir)
+
+(defvar my/shell-dir-history nil
+  "List of directories sent to *shell* via cd commands.")
+
+(defun my/shell-track-cd-command (input)
+  "If INPUT is a cd command, add its directory to `my/shell-dir-history`."
+  (when (and (string-match
+              ;; Match "cd DIR" or "cd 'DIR'" or "cd \"DIR\""
+              "^\\s-*cd\\s-+\\(['\"]?\\)\\([^'\"\n]+\\)\\1\\s-*$"
+              input)
+             ;; Only track absolute or ~-relative dirs for safety
+             (let ((dir (expand-file-name (match-string 2 input))))
+               (file-directory-p dir)))
+    (let* ((dir-raw (match-string 2 input))
+           (dir (expand-file-name dir-raw)))
+      (setq my/shell-dir-history
+            (cons dir (delete dir my/shell-dir-history))))))
+
+(defun my/shell-enable-cd-tracking ()
+  "Enable cd tracking in the current shell buffer."
+  (add-hook 'comint-input-filter-functions #'my/shell-track-cd-command nil t))
+
+(add-hook 'shell-mode-hook #'my/shell-enable-cd-tracking)
+
+(defun my/shell-cd-to-dir-from-history ()
+  "Prompt with counsel/ivy to select a directory from `my/shell-dir-history` and cd shell there."
+  (interactive)
+  (if (not my/shell-dir-history)
+      (message "No shell directory history yet.")
+    (let ((dir (ivy-read "Jump to shell dir: " my/shell-dir-history)))
+      (let ((shell-buf (get-buffer "*shell*")))
+        (if (not shell-buf)
+            (message "No *shell* buffer found.")
+          (with-current-buffer shell-buf
+            (comint-send-string shell-buf (concat "cd " (shell-quote-argument dir) "\n")))
+          (message "Sent 'cd' to *shell*: %s" dir))))))
+
+(global-set-key (kbd "C-j") #'my/shell-cd-to-dir-from-history)
+
+(defun my/shell-add-projectile-dirs-to-history ()
+  "Add all Projectile project root directories to `my/shell-dir-history`."
+  (interactive)
+  (when (bound-and-true-p projectile-known-projects)
+    (setq my/shell-dir-history
+          (delete-dups
+           (append (mapcar #'expand-file-name projectile-known-projects)
+                   my/shell-dir-history)))))
+
+(add-hook 'after-init-hook #'my/shell-add-projectile-dirs-to-history)
 
 ;; Backups
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
@@ -120,14 +222,25 @@
   "Evaluate region based on the current major mode."
   (interactive)
   (cond
+    ;; If it's an Elisp buffer, evaluate as Elisp
     ((eq major-mode 'emacs-lisp-mode)
      (eval-region (region-beginning) (region-end)))
+
+    ;; If it's a Python buffer, send to the Python shell
     ((eq major-mode 'python-mode)
      (python-shell-send-region))
+
+	;; Shell
     ((eq major-mode 'sh-mode)
      (process-send-region "*shell*" (region-beginning) (region-end))
+     ;; We add an explicit newline character to execute the command.
      (process-send-string "*shell*" "\n"))
-	;; Default to `eval-region`
+
+    ;; You could add more languages here
+    ;; ((eq major-mode 'js-mode)
+    ;;  (js-send-region ...))
+
+    ;; Otherwise, use the standard `eval-region` for any other language
     (t (eval-region (region-beginning) (region-end)))))
 
 (global-set-key (kbd "C-c C-r") 'my-eval-region)
@@ -164,7 +277,10 @@
 
 (global-set-key (kbd "C-x y") 'my-transpose-windows)
 
-;; Tell Emacs to get its PATH from zsh.
+;; --- exec-path-from-shell
+(require 'exec-path-from-shell)
+
+;; Tell Emacs to get its PATH from the shell.
 ;; The `exec-path-from-shell-shell-name` variable can be customized.
 ;; This needs to run early in your init.el, after package setup.
 (exec-path-from-shell-initialize)
@@ -176,9 +292,10 @@
 (custom-set-faces
  '(diff-added ((t (:foreground "green" :background nil))))
  '(diff-removed ((t (:foreground "red" :background nil))))
- ;; For magit-specific faces
+ ;; For Magit-specific faces (if needed)
  '(magit-diff-added ((t (:foreground "green" :background nil))))
  '(magit-diff-removed ((t (:foreground "red" :background nil))))
+ ;; You might also want to adjust these:
  '(magit-diff-added-highlight ((t (:foreground "green" :background nil))))
  '(magit-diff-removed-highlight ((t (:foreground "red" :background nil))))
 )
@@ -193,6 +310,13 @@
 (global-set-key (kbd "C-c o r") 'counsel-recentf)
 
 ;; --- Swiper ---
+;; Ensure the 'ivy' package is installed. Swiper depends on Ivy.
+(unless (package-installed-p 'ivy)
+  (message "Installing ivy package (required for swiper)...")
+  (package-refresh-contents) ; Make sure package list is up-to-date
+  (package-install 'ivy)
+  (message "ivy package installed."))
+
 (ivy-mode 1) ; Recommended for overall Ivy experience
 
 (require 'swiper)
@@ -225,18 +349,29 @@
 (setq org-todo-keywords
       '((sequence "TODO" "NEXT" "CURR" "|" "DONE" "CNCL" "SUSP" "VRFY")))
 
-(setq org-todo-keyword-faces
- '(
-    ("NEXT" .
-      (:foreground "khaki"
-       :background "dark goldenrod"
-       :weight bold))
-    ("CURR" .
-      (:foreground "light blue"
-       :background "midnight blue"
-       :weight bold))
-  )
-)
+(setq org-todo-keyword-faces '(
+        ("NEXT" .
+	 (:foreground "khaki"
+	  :background "dark goldenrod"
+	  :weight bold))
+        ("CURR" .
+	 (:foreground "light blue"
+	  :background "midnight blue"
+	  :weight bold))
+	))
+
+;; 1. Set your Org root directory
+(defvar my/org-root "~/mw/"
+  "Root directory for my Org files.")
+
+;; 2. List your Org files using that root
+(setq my/org-refile-files
+      (mapcar (lambda (f) (expand-file-name f my/org-root))
+              '("now.org" "archive.org")))
+
+;; 3. Configure refile targets
+(setq org-refile-targets
+      `((,my/org-refile-files :maxlevel . 2)))
 
 ;; --- Theme ---
 ;; Optional: Disable other themes first for a clean slate
@@ -258,12 +393,9 @@
 ;; Enable company-mode globally after Emacs has finished starting up
 (global-company-mode)
 
-;; Optional: Customize company-mode settings
 (setq company-idle-delay 0.2)
 (setq company-minimum-prefix-length 2)
 
-;; Optional: Set up keybindings for company
-;; C-n and C-p for navigating completions (same as standard Emacs)
 (global-set-key (kbd "M-p") 'company-complete)
 
 ;; --- ripgrep ---
@@ -275,11 +407,6 @@
 (require 'lsp-mode)
 (require 'lsp-ui)
 
-;(add-to-list 'safe-local-variable-values '(lsp-enable-client . nil))
-
-;; Combined LSP clients list
-(setq lsp-enabled-clients '(pyright perls bash-ls))
-
 ;; --- Python ---
 ;; Bugs begin here ...
 ;; --- Python with LSP (pyright) ---
@@ -287,11 +414,12 @@
 
 ;; Explicitly set the executable path for the pyright client.
 ;; This is the location `lsp-mode` will use when you tell it to.
-(setq lsp-pyright-executable "/usr/bin/pyright-langserver")
+(setq lsp-pyright-executable "~/.local/venv/bin/pyright-langserver")
 
 ;; Tell lsp-mode that pyright is the default server for Python.
 ;; This is still a good idea, as it provides a clear preference.
 (setq lsp-python-default-server 'pyright)
+(setq lsp-enabled-clients '(pyright))
 
 ;; A simple hook to enable lsp-mode whenever you open a Python file.
 (add-hook 'python-mode-hook #'lsp-deferred)
@@ -311,10 +439,30 @@
 ;; You'll need to install the server: npm install -g bash-language-server
 
 ;; --- Perl ---
-(add-to-list 'auto-mode-alist '("\\.p[lm]\\'" . cperl-mode))
+;(add-to-list 'auto-mode-alist '("\\.p[lm]\\'" . cperl-mode))
+;(add-hook 'cperl-mode-hook #'lsp)
+;; You'll need to install the server: cpanm Perl::LanguageServer
+
+;; --- gptel ---
+;; Load gptel-cody
+(let* ((file "gptel-cody.el")
+       (found (locate-library file)))
+  (when found
+    (load file)
+    (condition-case nil
+        (progn
+          (require 'gptel-cody)
+          (setq gptel-model 'anthropic::2024-10-22::claude-3-5-sonnet-latest
+                gptel-backend (gptel-make-cody "Cody" :host "sourcegraph.mathworks.com"))
+          (init-cody gptel-backend))
+      (error (message "gptel-cody feature could not be loaded")))))
+
+(setq gptel-rewrite-default-action 'accept)
+(global-set-key (kbd "C-c g r") 'gptel-rewrite)
 
 ;; --- custom ---
 (setq custom-file "~/.emacs.d/custom.el")
 
+;; Load the custom file if it exists
 (when (file-exists-p custom-file)
   (load custom-file))
