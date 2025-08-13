@@ -195,6 +195,30 @@
 
 (add-hook 'after-init-hook #'my/shell-add-projectile-dirs-to-history)
 
+;; tmux-like functionality
+;; 1. Define your tmux-style shell split functions
+(defun my/shell-split-below ()
+  "Split window below and open a new shell."
+  (interactive)
+  (split-window-below)
+  (other-window 1)
+  (shell (generate-new-buffer-name "*shell*")))
+
+(defun my/shell-split-right ()
+  "Split window right and open a new shell."
+  (interactive)
+  (split-window-right)
+  (other-window 1)
+  (shell (generate-new-buffer-name "*shell*")))
+
+;; 2. Create a C-c b prefix keymap
+(define-prefix-command 'my/tmux-prefix)
+(global-set-key (kbd "C-c b") 'my/tmux-prefix)
+
+;; 3. Bind tmux-style splits to your prefix
+(define-key my/tmux-prefix (kbd "\"") #'my/shell-split-below)  ;; C-c b "
+(define-key my/tmux-prefix (kbd "%")  #'my/shell-split-right)  ;; C-c b %
+
 ;; Backups
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
 
@@ -298,7 +322,44 @@
  ;; You might also want to adjust these:
  '(magit-diff-added-highlight ((t (:foreground "green" :background nil))))
  '(magit-diff-removed-highlight ((t (:foreground "red" :background nil))))
-)
+ )
+
+(defun my/insert-jira-trailer-from-branch ()
+  "Parse the branch from a COMMIT_EDITMSG buffer and insert a Jira trailer.
+Looks for a line like '# On branch batsvr-17211' and inserts:
+Jira: BATSVR-17211
+at the end of the commit message (before comments), with a blank line before."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let (branch ticket trailer)
+      ;; Find the branch name in the comment
+      (when (re-search-forward "^# On branch \\([A-Za-z0-9_-]+\\)" nil t)
+        (setq branch (match-string 1))
+        ;; Try to match a JIRA ticket pattern (project-key-number)
+        (when (string-match "^\\([a-zA-Z0-9]+\\)-\\([0-9]+\\)" branch)
+          (setq ticket (concat (upcase (match-string 1 branch))
+                               "-"
+                               (match-string 2 branch)))
+          (setq trailer (concat "Jira: " ticket))
+          ;; Only insert if not already present
+          (unless (save-excursion
+                    (goto-char (point-min))
+                    (re-search-forward (regexp-quote trailer) nil t))
+            ;; Go to the last non-comment, non-empty line
+            (goto-char (point-max))
+            (while (and (not (bobp))
+                        (or (looking-at-p "^\\s-*$")
+                            (looking-at-p "^#")))
+              (forward-line -1))
+            (end-of-line)
+            ;; Ensure exactly one blank line before the trailer
+            (unless (looking-at-p "^$")
+              (insert "\n"))
+            (insert "\n" trailer "\n")))))))
+
+(with-eval-after-load 'git-commit
+  (define-key git-commit-mode-map (kbd "C-c j t") #'my/insert-jira-trailer-from-branch))
 
 ;; --- Recentf and Counsel ---
 (require 'recentf)
@@ -461,7 +522,7 @@
 (global-set-key (kbd "C-c g r") 'gptel-rewrite)
 
 ;; --- custom ---
-(setq custom-file "~/.emacs.d/custom.el")
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 
 ;; Load the custom file if it exists
 (when (file-exists-p custom-file)
