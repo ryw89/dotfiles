@@ -20,7 +20,6 @@ WORKDIR /tmp/bootstrap
 # Using --become-password-file for non-interactive use
 RUN sed -i 's/--ask-become-pass/--become-password-file password.txt/g' bootstrap.sh
 RUN echo $password > password.txt
-RUN ./bootstrap.sh
+RUN sudo ./bootstrap.sh
 
 ENTRYPOINT ["/bin/zsh"]
-
