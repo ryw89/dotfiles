@@ -12,6 +12,10 @@
   ansible.builtin.include_tasks:
     file: emacs.yml
 
+- name: Set up Perl
+  ansible.builtin.include_tasks:
+    file: perl.yml
+
 - name: Set up personal bin directory and scripts
   ansible.builtin.include_tasks:
     file: bin.yml

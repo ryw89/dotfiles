@@ -1,0 +1,18 @@
+- name: Ensure perl5 local::lib directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/perl5"
+    state: directory
+    mode: "0755"
+
+- name: Check if local::lib is already installed
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/perl5/lib/perl5/local/lib.pm"  
+  register: __bootstrap_local_lib_installed
+  
+- name: Install local::lib via cpanm if not present
+  ansible.builtin.shell: "cpanm --local-lib={{ ansible_env.HOME }}/perl5 local::lib"
+  environment:
+    PERL_MM_OPT: "INSTALL_BASE={{ ansible_env.HOME }}/perl5"
+    PERL_MB_OPT: "--install_base {{ ansible_env.HOME }}/perl5"
+    PATH: "{{ ansible_env.HOME }}/perl5/bin:{{ ansible_env.PATH }}"
+  when: not __bootstrap_local_lib_installed.stat.exists
