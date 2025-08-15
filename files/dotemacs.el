@@ -75,6 +75,55 @@
 (setq split-height-threshold nil) ;; change default window split
 (setq split-width-threshold 0)
 
+;; Comment inserter -- Used in conjunction with occur
+(defun my/insert-comment-below-matches-in-files (dir file-regexp line-regexp comment)
+  "Recursively insert COMMENT below every line matching LINE-REGEXP in files under DIR whose names match FILE-REGEXP."
+  (interactive
+   (list
+    (read-directory-name "Directory: ")
+    (read-regexp "Filename regexp (e.g., \\.el$): ")
+    (read-regexp "Line regexp to match: ")
+    (read-string "Comment to insert: ")))
+  (let ((files (directory-files-recursively dir file-regexp)))
+    (dolist (file files)
+      (with-current-buffer (find-file-noselect file)
+        (save-excursion
+          (goto-char (point-min))
+          (let ((count 0))
+            (while (re-search-forward line-regexp nil t)
+              (end-of-line)
+              (insert "\n" comment)
+              (setq count (1+ count)))
+            (when (> count 0)
+              (save-buffer))))
+        (kill-buffer)))))
+
+;; trim whitespace
+(defun my/trim-trailing-and-blank-whitespace-region (beg end)
+  "Trim trailing whitespace in region.
+
+   If a line in the region contains only whitespace, remove all
+   whitespace, but keep the empty line."
+  (interactive "r")
+  (save-excursion
+    (save-restriction
+      (narrow-to-region beg end)
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let ((line-start (point))
+              (line-end (line-end-position)))
+          (if (string-match-p "\\`[ \t]+\\'" (buffer-substring line-start line-end))
+              ;; Line is only whitespace: delete all
+              (delete-region line-start line-end)
+            ;; Else, just trim trailing whitespace
+            (progn
+              (goto-char line-end)
+              (skip-chars-backward " \t" line-start)
+              (delete-region (point) line-end)))
+          (forward-line 1))))))
+
+(global-set-key (kbd "C-c t w s") #'my/trim-trailing-and-blank-whitespace-region)
+
 ;; --- Shell ---
 (global-set-key (kbd "C-t") 'shell)
 
